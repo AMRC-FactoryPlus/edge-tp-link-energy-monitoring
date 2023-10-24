@@ -1,0 +1,15 @@
+{
+  "mqtt": {
+    "host": "<MQTT_Server_IP>",
+    "port": <1883/8883>,
+    "protocol": "<mqtt/mqtts>",
+    "username": "<Username>",
+    "password": "<Password",
+    "baseTopic": "Site/EnergyMonitoring"
+  },
+  "deviceAddresses": [
+    "<IP_Address_1>",
+    "<IP_Address_2>",
+    "<IP_Address_3>"
+  ]
+}

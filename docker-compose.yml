@@ -1,0 +1,14 @@
+version: "3.7"
+services:
+  smartPlug:
+    volumes:
+      - "config:/app/config"
+    image: amrc-factoryplus.shef.ac.uk:5000/factoryplus-iot-power-monitoring:1.1.6
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "5"
+        max-size: "1m"
+volumes:
+  config:

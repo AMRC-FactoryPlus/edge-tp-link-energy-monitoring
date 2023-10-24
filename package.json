@@ -1,0 +1,22 @@
+{
+  "name": "edge-tp-link-energy-monitoring",
+  "version": "0.1.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.0.1",
+    "fs-extra": "^10.1.0",
+    "mqtt": "^4.3.7",
+    "tplink-smarthome-api": "^4.2.0"
+  }
+}
