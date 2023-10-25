@@ -22,5 +22,5 @@ Update the [config.json](./config/config.json.example) file in `/app/config/conf
 }
 ```
 
-## Practical Example
+## Example
 ![](./docs/mqtt-example.png)
