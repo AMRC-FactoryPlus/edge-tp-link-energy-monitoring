@@ -9,7 +9,7 @@ const plugReconnectDelay = 5000
 const plugTimeout = 1500
 
 // Config
-const config = fs.readJsonSync("./config/config.json");
+const config = fs.readJsonSync("/app/config/config.json");
 const baseTopic = config.mqtt.baseTopic;
 const plugNames = config.deviceAddresses;
 const mqttOptions = {
