@@ -39,7 +39,6 @@ mqttClient.on("connect", function () {
   mqttClient.subscribe(baseTopic + "/App/Command/#");
   // Relay controls
   mqttClient.subscribe(baseTopic + "/+/Relay");
-  mqttClient.subscribe(baseTopic + "/+/Command");
 
   mqttClient.publish(baseTopic + "/App/Status", '{"online": "true"}');
   appOnline = true;
@@ -78,22 +77,18 @@ mqttClient.on("message", function (topic, message) {
       // Restart App
       appOnline = false;
       process.exit();
-  } else if (endTopic == "Relay" || endTopic == "Command") {
+  } else if (endTopic == "Relay") {
     // Switch Relay State
 
     // Parse message
-    if (endTopic == "Command") {
+
       try {
       state = JSON.parse(message).relayState
       } catch (error) {
         console.log("⚠️ ERROR: Cannot parse Command message.");
       }
-    } else {
-      (message.toString() === "true" ) ? state = true: null;
-      (message.toString() === "false" ) ? state = false: null;
-    }
 
-    if (typeof state != "undefined") {
+    if (state === true || state === false) {
     try {
       const client = new Client();
       client.getDevice({ host: deviceName }).then((device) => {
@@ -102,7 +97,7 @@ mqttClient.on("message", function (topic, message) {
             console.log(`🔀 PLUG: Turning plug ${deviceName} to ${state}`);
           // Sorry, does not like it otherwise
             (state == true) ? device.setPowerState(true) : device.setPowerState(false);
-            mqttClient.publish(`${baseTopic}/${deviceName}/Command`, JSON.stringify({ relayState: state }));
+            mqttClient.publish(`${baseTopic}/${deviceName}/Relay`, JSON.stringify({ relayState: state }));
         } else {
           console.log("👌 PLUG: Already set to '" + state + "'");
         }
