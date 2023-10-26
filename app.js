@@ -24,8 +24,8 @@ const mqttOptions = {
     retain: true,
   },
   clientId: "EnergyMonitorPublisher-" + Math.random().toString(16),
-  connectTimeout: 30*1000,
-  reconnectPeriod: 10*1000
+  connectTimeout: 30 * 1000,
+  reconnectPeriod: 10 * 1000
 };
 
 // Setup Connections
@@ -45,7 +45,7 @@ mqttClient.on("connect", function () {
 });
 
 mqttClient.on("reconnect", function () {
-  mqttClient.publish(baseTopic + "/App/Status", '{"online": "true"}', {retain:false});
+  mqttClient.publish(baseTopic + "/App/Status", '{"online": "true"}', { retain: false });
   appOnline = true;
   console.log("🔄 MQTT: Reconnected");
 });
@@ -54,10 +54,10 @@ mqttClient.on("disconnect", function () {
   console.log("☠️ MQTT: Disconnected");
 });
 
-mqttClient.on("error", function(error) {
+mqttClient.on("error", function (error) {
   console.log(error.toString());
   mqttClient.publish(baseTopic + "/App/Log", error.toString());
-  mqttClient.publish(baseTopic + "/App/Status", '{"online": "false"}', {retain:true});
+  mqttClient.publish(baseTopic + "/App/Status", '{"online": "false"}', { retain: true });
   appOnline = false;
   console.log(`⚠️ MQTT: Error: ${err.message}`);
   process.exit()
@@ -74,38 +74,38 @@ mqttClient.on("message", function (topic, message) {
   let state = undefined;
 
   if (topic == baseTopic + "/App/Command/Restart") {
-      // Restart App
-      appOnline = false;
-      process.exit();
+    // Restart App
+    appOnline = false;
+    process.exit();
   } else if (endTopic == "Relay") {
     // Switch Relay State
 
     // Parse message
 
-      try {
+    try {
       state = JSON.parse(message).relayState
-      } catch (error) {
-        console.log("⚠️ ERROR: Cannot parse Command message.");
-      }
+    } catch (error) {
+      console.log("⚠️ ERROR: Cannot parse Command message.");
+    }
 
     if (state === true || state === false) {
-    try {
-      const client = new Client();
-      client.getDevice({ host: deviceName }).then((device) => {
-        console.log('🔎 Found device:', device.deviceType, device.alias);
-        if (device.relayState != state) {
+      try {
+        const client = new Client();
+        client.getDevice({ host: deviceName }).then((device) => {
+          console.log('🔎 Found device:', device.deviceType, device.alias);
+          if (device.relayState != state) {
             console.log(`🔀 PLUG: Turning plug ${deviceName} to ${state}`);
-          // Sorry, does not like it otherwise
+            // Sorry, does not like it otherwise
             (state == true) ? device.setPowerState(true) : device.setPowerState(false);
             mqttClient.publish(`${baseTopic}/${deviceName}/Relay`, JSON.stringify({ relayState: state }));
-        } else {
-          console.log("👌 PLUG: Already set to '" + state + "'");
-        }
-      });
-    } catch (error) {
-      console.log(error);
-      mqttClient.publish(baseTopic + "/App/Log", error.toString());
-    }
+          } else {
+            console.log("👌 PLUG: Already set to '" + state + "'");
+          }
+        });
+      } catch (error) {
+        console.log(error);
+        mqttClient.publish(baseTopic + "/App/Log", error.toString());
+      }
     } else {
       mqttClient.publish(baseTopic + "/App/Log", "PLUG: Cannot parse command '" + state + "' for " + deviceName + " . Incoming Message: " + message);
     }
@@ -129,33 +129,49 @@ async function runTpLinkClient(deviceName) {
 
       // Update meta
       const deviceSysInfo = await device.getSysInfo();
-      const relayState = await device.getPowerState();
       mqttClient.publish(`${baseTopic}/${deviceName}/Status`, JSON.stringify({ online: true }));
       mqttClient.publish(`${baseTopic}/${deviceName}/DeviceInfo`, JSON.stringify(deviceSysInfo));
-      mqttClient.publish(`${baseTopic}/${deviceName}/Command`, JSON.stringify({ relayState: relayState}, {retain:false}));
+
+      let oldIsRelayOn
+      let oldIsOnline = false
+      let isOnline = false
 
       while (true) {
         try {
           const devicePowerState = await device.getPowerState();
           const inUse = await device.getInUse();
+          const isRelayOn = await device.getPowerState();
+          isOnline = true
           var info = device.emeter.realtime;
           info.inUse = inUse;
           info.plugRelayActive = devicePowerState;
 
           // Pub data
           mqttClient.publish(`${baseTopic}/${deviceName}/Metrics`, JSON.stringify(info));
-          mqttClient.publish(`${baseTopic}/${deviceName}/Status`, JSON.stringify({ online: true }));
+          if (isOnline != oldIsOnline) {
+            mqttClient.publish(`${baseTopic}/${deviceName}/Status`, JSON.stringify({ online: isOnline }));
+          }
+          if (isRelayOn != oldIsRelayOn) {
+            // Pub on change
+            mqttClient.publish(`${baseTopic}/${deviceName}/Relay`, JSON.stringify({ relayState: isRelayOn }, { retain: false }));
+          }
+
+          // Keep in memory
+          oldIsOnline = isOnline
+          oldIsRelayOn = isRelayOn
+
 
           await delay(pollIntervalInMs);
         } catch (e) {
+          isOnline = false;
           hasFailed = true;
-          mqttClient.publish(`${baseTopic}/${deviceName}/Status`, JSON.stringify({ online: false }), { retain: true });
+          mqttClient.publish(`${baseTopic}/${deviceName}/Status`, JSON.stringify({ online: isOnline }), { retain: true });
           await delay(plugReconnectDelay);
           break;
         }
       }
-    } catch ({ name, code, errno, message, hostname}) {
-      if(errno == -3008){
+    } catch ({ name, code, errno, message, hostname }) {
+      if (errno == -3008) {
         console.log(`👎 PLUG: Cannot reach to host: ${deviceName}`);
       } else {
         console.log(message);
