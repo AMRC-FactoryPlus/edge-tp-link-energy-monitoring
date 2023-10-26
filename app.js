@@ -79,11 +79,18 @@ mqttClient.on("message", function (topic, message) {
       appOnline = false;
       process.exit();
   } else if (endTopic == "Relay" || endTopic == "Command") {
+    // Switch Relay State
+
+    // Parse message
     if (endTopic == "Command") {
+      try {
       state = JSON.parse(message).relayState
+      } catch (error) {
+        console.log("⚠️ ERROR: Cannot parse Command message.");
+      }
     } else {
-      (message.toString() == "true" ) ? state = true: null;
-      (message.toString() == "false" ) ? state = false: null;
+      (message.toString() === "true" ) ? state = true: null;
+      (message.toString() === "false" ) ? state = false: null;
     }
 
     if (typeof state != "undefined") {
@@ -105,7 +112,7 @@ mqttClient.on("message", function (topic, message) {
       mqttClient.publish(baseTopic + "/App/Log", error.toString());
     }
     } else {
-      mqttClient.publish(baseTopic + "/App/Log", "PLUG: Cannot parse command '" + state + "' for " + deviceName);
+      mqttClient.publish(baseTopic + "/App/Log", "PLUG: Cannot parse command '" + state + "' for " + deviceName + " . Incoming Message: " + message);
     }
   }
 });
