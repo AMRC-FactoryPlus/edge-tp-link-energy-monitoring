@@ -6,7 +6,7 @@ const { Client } = require("tplink-smarthome-api");
 // Global Variables
 let appOnline = false;
 const plugReconnectDelay = 5000
-const plugTimeout = 1500
+const plugTimeout = 5000
 
 // Config
 const config = fs.readJsonSync("/app/config/config.json");
