@@ -9,9 +9,11 @@ const plugReconnectDelay = 5000
 const plugTimeout = 5000
 
 // Config
-const config = fs.readJsonSync("/app/config/config.json");
+const config = fs.readJsonSync("./config/config.json");
 const baseTopic = config.mqtt.baseTopic;
 const plugNames = config.deviceAddresses;
+const pollIntervalInMs = config.pollIntervalInMs;
+
 const mqttOptions = {
   username: config.mqtt.username,
   password: config.mqtt.password,
@@ -122,7 +124,6 @@ async function runTpLinkClient(deviceName) {
         { timeout: plugTimeout }
       );
       console.log(`✅ PLUG: Device ${deviceName} connected`);
-      failedOnce = false;
 
       // Update meta
       const deviceSysInfo = await device.getSysInfo();
@@ -143,24 +144,23 @@ async function runTpLinkClient(deviceName) {
           mqttClient.publish(`${baseTopic}/${deviceName}/Metrics`, JSON.stringify(info));
           mqttClient.publish(`${baseTopic}/${deviceName}/Status`, JSON.stringify({ online: true }));
 
-          await delay(plugReconnectDelay);
+          await delay(pollIntervalInMs);
         } catch (e) {
-          console.log(e);
           hasFailed = true;
           mqttClient.publish(`${baseTopic}/${deviceName}/Status`, JSON.stringify({ online: false }), { retain: true });
           await delay(plugReconnectDelay);
           break;
         }
       }
-    } catch (e) {
-      hasFailed = true;
-      console.log(e);
-      if (!failedOnce) {
-        mqttClient.publish(`${baseTopic}/${deviceName}/Status`, JSON.stringify({ online: false }), { retain: true });
-        failedOnce = true;
-        console.log(`☝️ Failed once ${deviceName}`);
-        await delay(plugReconnectDelay);
+    } catch ({ name, code, errno, message, hostname}) {
+      if(errno == -3008){
+        console.log(`👎 PLUG: Cannot reach to host: ${deviceName}`);
+      } else {
+        console.log(message);
       }
+      mqttClient.publish(`${baseTopic}/${deviceName}/Status`, JSON.stringify({ online: false }), { retain: true });
+      hasFailed = true;
+      await delay(plugReconnectDelay);
     }
   } while (hasFailed);
 }

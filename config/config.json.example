@@ -4,9 +4,10 @@
     "port": <1883/8883>,
     "protocol": "<mqtt/mqtts>",
     "username": "<Username>",
-    "password": "<Password",
+    "password": "<Password>",
     "baseTopic": "Site/EnergyMonitoring"
   },
+  "pollIntervalInMs":3000,
   "deviceAddresses": [
     "<IP_Address_1>",
     "<IP_Address_2>",
